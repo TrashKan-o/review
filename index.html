@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trashkan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void: #0b0f0c;
+    --pillar: #1c2620;
+    --moss: #3d4c3e;
+    --haze: #cdbd84;
+    --gold: #c9ab6a;
+    --cream: #e9e3cf;
+    --cream-dim: #a9a690;
+    --hairline: rgba(233,227,207,0.16);
+    --rust-dark: #2b2620;
+    --rust-mid: #6b5a44;
+    --rust-light: #9c8a6a;
+    --tape: #726a5c;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    color: var(--cream);
+    font-family: 'Jost', sans-serif;
+    background: #0a0d0b;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    overflow-x: hidden;
+    padding: 90px 20px 80px;
+  }
+
+  /* grain / texture overlay */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.5;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/></svg>");
+  }
+
+  /* ---------- Room scene backdrop ---------- */
+  .scene {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    overflow: hidden;
+    background: linear-gradient(180deg, #10201c 0%, #16241f 30%, #1c2a24 55%, #26332a 78%, #2f3c30 100%);
+  }
+
+  .scene-beam {
+    position: absolute;
+    top: -5%;
+    left: 50%;
+    width: 70%;
+    height: 85%;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse 45% 55% at 50% 0%, rgba(233,224,180,0.32), rgba(200,205,170,0.1) 40%, transparent 72%);
+  }
+
+  .scene-pillar {
+    position: absolute;
+    top: -4%;
+    height: 62%;
+    background: linear-gradient(90deg, rgba(10,15,12,0.9), rgba(50,60,50,0.55) 45%, rgba(10,15,12,0.9));
+    filter: blur(0.3px);
+  }
+
+  .scene-pillar.l1 { left: -4%;  width: 20%; clip-path: polygon(20% 0, 100% 0, 88% 100%, 0 100%); }
+  .scene-pillar.r1 { right: -4%; width: 20%; clip-path: polygon(0 0, 80% 0, 100% 100%, 12% 100%); }
+  .scene-pillar.l2 { left: 15%;  width: 11%; opacity: 0.75; clip-path: polygon(15% 0, 100% 0, 90% 100%, 0 100%); }
+  .scene-pillar.r2 { right: 15%; width: 11%; opacity: 0.75; clip-path: polygon(0 0, 85% 0, 100% 100%, 10% 100%); }
+
+  .scene-floor {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 58%;
+  }
+
+  .scene-floor svg { width: 100%; height: 100%; display: block; }
+
+  .scene-grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.3;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/></svg>");
+  }
+
+  /* ---------- Nut graphic ---------- */
+  .nut-viewport {
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    width: min(70vw, 480px);
+    transform: translateX(-50%);
+    z-index: -1;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .nut-drift {
+    width: 100%;
+    aspect-ratio: 1;
+    animation: drift 14s ease-in-out infinite;
+    mask-image: linear-gradient(to bottom, black 45%, transparent 92%);
+    -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent 92%);
+  }
+
+  .nut-spin {
+    width: 100%;
+    height: 100%;
+    animation: spin 70s linear infinite;
+    filter: drop-shadow(0 30px 60px rgba(0,0,0,0.5));
+  }
+
+  .nut-spin svg {
+    width: 100%;
+    height: 100%;
+    opacity: 0.4;
+  }
+
+  @keyframes drift {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(18px); }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nut-drift, .nut-spin { animation: none; }
+    .nut-viewport { transform: translateX(-50%) !important; }
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 620px;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  .eyebrow {
+    font-family: 'Jost', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 26px;
+    padding-left: 0.45em; /* optical centering for tracked text */
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: clamp(48px, 13vw, 84px);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin: 0 0 30px;
+    padding-left: 0.14em;
+    line-height: 1;
+    color: var(--cream);
+    text-shadow: 0 0 40px rgba(224,206,140,0.35), 0 2px 0 rgba(0,0,0,0.4);
+  }
+
+  .rule {
+    width: 1px;
+    height: 46px;
+    background: linear-gradient(var(--gold), transparent);
+    margin: 0 auto;
+    opacity: 0.7;
+  }
+
+  /* ---------- Catalog ---------- */
+  .catalog {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    text-align: center;
+    padding: 34px 10px;
+    border-bottom: 1px solid var(--hairline);
+    position: relative;
+    transition: background 0.4s ease;
+  }
+
+  .catalog .card:first-child {
+    border-top: 1px solid var(--hairline);
+  }
+
+  .card:hover {
+    background: linear-gradient(rgba(224,206,140,0.05), transparent);
+  }
+
+  .card:focus-visible {
+    outline: 1px solid var(--gold);
+    outline-offset: 6px;
+  }
+
+  .platform-name {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: clamp(24px, 6vw, 34px);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+    padding-left: 0.16em;
+    color: var(--cream);
+    transition: text-shadow 0.4s ease, color 0.4s ease;
+  }
+
+  .card:hover .platform-name {
+    color: #fff;
+    text-shadow: 0 0 26px rgba(224,206,140,0.5);
+  }
+
+  .stat {
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    padding-left: 0.3em;
+  }
+
+  .stat.unlisted {
+    color: rgba(169,166,144,0.45);
+    font-style: italic;
+    letter-spacing: 0.05em;
+    text-transform: none;
+    padding-left: 0;
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    margin-top: 60px;
+    text-align: center;
+  }
+
+  .colophon {
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    line-height: 1.8;
+    letter-spacing: 0.03em;
+    color: var(--cream-dim);
+    max-width: 40ch;
+    margin: 0 auto 26px;
+  }
+
+  .credo {
+    font-family: 'Cinzel', serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+  }
+
+  @media (max-width: 420px) {
+    body { padding: 60px 16px 60px; }
+    header { margin-bottom: 40px; }
+    .card { padding: 26px 6px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .platform-name { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="scene">
+    <div class="scene-pillar l1"></div>
+    <div class="scene-pillar r1"></div>
+    <div class="scene-pillar l2"></div>
+    <div class="scene-pillar r2"></div>
+    <div class="scene-beam"></div>
+    <div class="scene-floor">
+      <svg viewBox="0 0 800 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="duneFar" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3a4a3a"/>
+            <stop offset="100%" stop-color="#2a3628"/>
+          </linearGradient>
+          <linearGradient id="duneMid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4c5e49"/>
+            <stop offset="100%" stop-color="#33422f"/>
+          </linearGradient>
+          <linearGradient id="duneNear" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#63735c"/>
+            <stop offset="100%" stop-color="#3d4a37"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#duneFar)" d="M0,60 C60,30 120,80 190,55 C260,30 320,75 400,50 C480,25 540,70 620,48 C690,28 740,60 800,45 L800,300 L0,300 Z"/>
+        <path fill="url(#duneMid)" d="M0,130 C70,95 140,150 220,120 C300,90 360,145 440,115 C520,85 580,140 660,110 C720,90 760,120 800,105 L800,300 L0,300 Z"/>
+        <path fill="url(#duneNear)" d="M0,210 C80,170 150,225 240,195 C330,165 400,220 490,190 C570,165 630,215 710,185 C750,170 780,195 800,185 L800,300 L0,300 Z"/>
+      </svg>
+    </div>
+    <div class="scene-grain"></div>
+  </div>
+
+  <div class="nut-viewport" id="nutViewport">
+    <div class="nut-drift">
+      <div class="nut-spin">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--rust-light)"/>
+              <stop offset="45%" stop-color="var(--rust-mid)"/>
+              <stop offset="100%" stop-color="var(--rust-dark)"/>
+            </linearGradient>
+            <linearGradient id="tapeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="var(--tape)" stop-opacity="0.9"/>
+              <stop offset="100%" stop-color="var(--tape)" stop-opacity="0.55"/>
+            </linearGradient>
+          </defs>
+
+          <!-- ring body with true cut-out centre, evenodd -->
+          <path
+            fill-rule="evenodd"
+            fill="url(#metal)"
+            d="M198,42 L318,96 L358,214 L292,326 L164,336 L70,252 L64,128 L140,58 Z
+               M198,132 A66,66 0 1,0 198.1,132 Z"
+          />
+
+          <!-- corroded patches -->
+          <ellipse cx="150" cy="90" rx="22" ry="14" fill="var(--rust-light)" opacity="0.25"/>
+          <ellipse cx="270" cy="110" rx="16" ry="10" fill="var(--rust-light)" opacity="0.2"/>
+          <ellipse cx="120" cy="230" rx="18" ry="24" fill="var(--rust-dark)" opacity="0.3"/>
+
+          <!-- cloth tape wrapped diagonally -->
+          <rect x="60" y="230" width="300" height="46" rx="4" fill="url(#tapeGrad)" transform="rotate(18 210 253)"/>
+          <rect x="90" y="290" width="260" height="40" rx="4" fill="url(#tapeGrad)" opacity="0.85" transform="rotate(18 220 310)"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="page">
+    <header>
+      <p class="eyebrow">My Objective Opinions</p>
+      <h1>Trashkan</h1>
+      <div class="rule"></div>
+    </header>
+
+    <div class="catalog">
+
+      <a class="card" href="https://letterboxd.com/Trashd/" target="_blank" rel="noopener noreferrer">
+        <p class="platform-name">Letterboxd</p>
+        <p class="stat">136 Films Logged</p>
+      </a>
+
+      <a class="card" href="https://www.goodreads.com/user/show/192709611-trashbks" target="_blank" rel="noopener noreferrer">
+        <p class="platform-name">Goodreads</p>
+        <p class="stat">81 Books Logged</p>
+      </a>
+
+      <a class="card" href="https://backloggd.com/u/Trashd/" target="_blank" rel="noopener noreferrer">
+        <p class="platform-name">Backloggd</p>
+        <p class="stat">8 Games Played</p>
+      </a>
+
+      <a class="card" href="https://www.albumoftheyear.org/user/trashkan/" target="_blank" rel="noopener noreferrer">
+        <p class="platform-name">Album of the Year</p>
+        <p class="stat">23 Albums Rated</p>
+      </a>
+
+      <a class="card" href="https://rateyourmusic.com/~RymKan" target="_blank" rel="noopener noreferrer">
+        <p class="platform-name">RateYourMusic</p>
+        <p class="stat unlisted">count unavailable — site blocks lookups</p>
+      </a>
+
+    </div>
+
+    <footer>
+      <p class="colophon">A collection of my faultless and impeccable reviews for the following media. Mainly catalogued for personal reason.</p>
+      <p class="credo">All for one, and one for all!</p>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      var nut = document.getElementById('nutViewport');
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduceMotion || !nut) return;
+
+      function onScroll() {
+        var maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+        var frac = Math.min(window.scrollY / maxScroll, 1);
+        var scale = 1 + frac * 1.8;      // enlarges up to ~2.8x
+        var opacity = Math.max(0.4 * (1 - frac * 1.15), 0); // fades toward 0
+        nut.style.transform = 'translateX(-50%) scale(' + scale.toFixed(3) + ')';
+        nut.style.opacity = opacity.toFixed(3);
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    })();
+  </script>
+</body>
+</html>

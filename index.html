@@ -204,6 +204,7 @@
     justify-content: center;
     gap: 18px;
     margin: 40px 0 52px;
+    will-change: transform, opacity;
   }
 
   .badge {
@@ -276,6 +277,13 @@
     position: relative;
     overflow: hidden;
     transition: background 0.4s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .card-inner {
+    opacity: 1;
+    transform: translateY(0);
+    will-change: opacity, transform;
+    transition: opacity 0.2s linear, transform 0.2s linear;
   }
 
   .catalog .card:first-child {
@@ -401,7 +409,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .card, .platform-name, .platform-name::after, .stat { transition: none; }
+    .card, .card-inner, .platform-name, .platform-name::after, .stat { transition: none; }
+    .card-inner { opacity: 1; transform: none; }
     .card:hover { transform: none; }
   }
 </style>
@@ -475,7 +484,7 @@
       <div class="rule"></div>
     </header>
 
-    <nav class="badge-row" aria-label="Quick links">
+    <nav class="badge-row" id="badgeRow" aria-label="Quick links">
       <a class="badge" href="https://letterboxd.com/Trashd/" target="_blank" rel="noopener noreferrer" aria-label="Letterboxd" style="--i:0">
         <img src="logos/letterboxd.png" alt="" loading="lazy">
       </a>
@@ -496,56 +505,115 @@
     <div class="catalog">
 
       <a class="card" href="https://letterboxd.com/Trashd/" target="_blank" rel="noopener noreferrer">
-        <p class="platform-name">Letterboxd</p>
-        <p class="stat">136 Films Logged</p>
+        <div class="card-inner">
+          <p class="platform-name">Letterboxd</p>
+          <p class="stat">136 Films Logged</p>
+        </div>
       </a>
 
       <a class="card" href="https://www.goodreads.com/user/show/192709611-trashbks" target="_blank" rel="noopener noreferrer">
-        <p class="platform-name">Goodreads</p>
-        <p class="stat">81 Books Logged</p>
+        <div class="card-inner">
+          <p class="platform-name">Goodreads</p>
+          <p class="stat">81 Books Logged</p>
+        </div>
       </a>
 
       <a class="card" href="https://backloggd.com/u/Trashd/" target="_blank" rel="noopener noreferrer">
-        <p class="platform-name">Backloggd</p>
-        <p class="stat">8 Games Played</p>
+        <div class="card-inner">
+          <p class="platform-name">Backloggd</p>
+          <p class="stat">8 Games Played</p>
+        </div>
       </a>
 
       <a class="card" href="https://www.albumoftheyear.org/user/trashkan/" target="_blank" rel="noopener noreferrer">
-        <p class="platform-name">Album of the Year</p>
-        <p class="stat">23 Albums Rated</p>
+        <div class="card-inner">
+          <p class="platform-name">Album of the Year</p>
+          <p class="stat">23 Albums Rated</p>
+        </div>
       </a>
 
       <a class="card" href="https://rateyourmusic.com/~RymKan" target="_blank" rel="noopener noreferrer">
-        <p class="platform-name">RateYourMusic</p>
-        <p class="stat unlisted">count unavailable — site blocks lookups</p>
+        <div class="card-inner">
+          <p class="platform-name">RateYourMusic</p>
+          <p class="stat unlisted">count unavailable — site blocks lookups</p>
+        </div>
       </a>
 
     </div>
 
     <footer>
       <p class="colophon">A collection of my faultless and impeccable reviews for the following media. Mainly catalogued for personal reason.</p>
-      <p class="credo">All for one, and one for all!</p>
+      <p class="credo">he bird is gone, and in what meadow does it now sing?</p>
       <p class="dedication">—Flow My Tears, the Policeman Said</p>
     </footer>
   </div>
 
   <script>
     (function() {
-      var nut = document.getElementById('nutViewport');
       var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reduceMotion || !nut) return;
+      if (reduceMotion) return;
+
+      var nut = document.getElementById('nutViewport');
+      var badgeRow = document.getElementById('badgeRow');
+      var cardInners = Array.prototype.slice.call(document.querySelectorAll('.card-inner'));
+
+      function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      var ticking = false;
+
+      function update() {
+        ticking = false;
+        var vh = window.innerHeight;
+
+        // ---- Nut: grows and dissolves as you scroll ----
+        if (nut) {
+          var maxScroll = Math.max(document.body.scrollHeight - vh, 1);
+          var frac = Math.min(window.scrollY / maxScroll, 1);
+          var scale = 1 + frac * 1.8;
+          var nutOpacity = Math.max(0.4 * (1 - frac * 1.15), 0);
+          nut.style.transform = 'translateX(-50%) scale(' + scale.toFixed(3) + ')';
+          nut.style.opacity = nutOpacity.toFixed(3);
+        }
+
+        // ---- Badge row: drifts up and fades away as the page scrolls ----
+        if (badgeRow) {
+          var fadeDistance = 260;
+          var bFrac = Math.min(window.scrollY / fadeDistance, 1);
+          var rise = bFrac * 70;
+          var badgeOpacity = Math.max(1 - bFrac * 1.2, 0);
+          badgeRow.style.transform = 'translateY(-' + rise.toFixed(1) + 'px)';
+          badgeRow.style.opacity = badgeOpacity.toFixed(3);
+        }
+
+        // ---- Cards: rise in from below, fade out as they exit past the top ----
+        cardInners.forEach(function(inner) {
+          var rect = inner.getBoundingClientRect();
+
+          // entry: 0 while still below the fold, 1 once well into view
+          var entryT = clamp((vh * 0.92 - rect.top) / (vh * 0.92 - vh * 0.6), 0, 1);
+
+          // exit: 1 while comfortably in view, 0 once it has scrolled up past the top
+          var exitT = clamp((rect.bottom - (-30)) / (170 - (-30)), 0, 1);
+
+          var opacity = entryT * exitT;
+          var translateY = lerp(30, 0, entryT) - (1 - exitT) * 22;
+
+          inner.style.opacity = opacity.toFixed(3);
+          inner.style.transform = 'translateY(' + translateY.toFixed(1) + 'px)';
+        });
+      }
 
       function onScroll() {
-        var maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
-        var frac = Math.min(window.scrollY / maxScroll, 1);
-        var scale = 1 + frac * 1.8;      // enlarges up to ~2.8x
-        var opacity = Math.max(0.4 * (1 - frac * 1.15), 0); // fades toward 0
-        nut.style.transform = 'translateX(-50%) scale(' + scale.toFixed(3) + ')';
-        nut.style.opacity = opacity.toFixed(3);
+        if (!ticking) {
+          window.requestAnimationFrame(update);
+          ticking = true;
+        }
       }
 
       window.addEventListener('scroll', onScroll, { passive: true });
-      onScroll();
+      window.addEventListener('resize', onScroll);
+      update();
     })();
   </script>
 </body>

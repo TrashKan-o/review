@@ -1,1 +1,21 @@
-{"rym_ratings": "N/A"}
+async function updateRYM() {
+  const el = document.getElementById('rym-stat');
+  try {
+    const res = await fetch('./stats.json');
+    const data = await res.json();
+    
+    if (data.rym_ratings && data.rym_ratings !== 'N/A') {
+      el.textContent = `${data.rym_ratings} Ratings Logged`;
+      el.classList.remove('unlisted'); // Removes the faded italic styling
+    } else {
+      el.textContent = 'Count unavailable';
+    }
+  } catch (err) {
+    el.textContent = 'Count unavailable';
+  }
+}
+
+// Call on page load
+document.addEventListener('DOMContentLoaded', () => {
+  updateRYM();
+});

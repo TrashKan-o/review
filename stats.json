@@ -1,7 +1,7 @@
 {
   "letterboxd": {
     "count": 6,
-    "label": "Films Logged",
+    "label": "Films Watched",
     "updated": "2026-07-29"
   },
   "goodreads": {
@@ -16,7 +16,7 @@
   },
   "aoty": {
     "count": 22,
-    "label": "Albums Rated",
+    "label": "Albums Listened",
     "updated": "2026-07-29"
   },
   "mal": {

@@ -1,7 +1,27 @@
 {
-  "letterboxd": { "count": 136, "label": "Films Logged", "updated": "2026-07-29" },
-  "goodreads": { "count": 65, "label": "Books Read", "updated": "2026-07-29" },
-  "backloggd": { "count": 8, "label": "Games Played", "updated": "2026-07-29" },
-  "aoty": { "count": 23, "label": "Albums Rated", "updated": "2026-07-29" },
-  "mal": { "count": 25, "label": "Anime Completed", "updated": "2026-07-29" }
+  "letterboxd": {
+    "count": 6,
+    "label": "Films Logged",
+    "updated": "2026-07-29"
+  },
+  "goodreads": {
+    "count": 65,
+    "label": "Books Read",
+    "updated": "2026-07-29"
+  },
+  "backloggd": {
+    "count": 4,
+    "label": "Games Played",
+    "updated": "2026-07-29"
+  },
+  "aoty": {
+    "count": 22,
+    "label": "Albums Rated",
+    "updated": "2026-07-29"
+  },
+  "mal": {
+    "count": 10,
+    "label": "Anime Completed",
+    "updated": "2026-07-29"
+  }
 }

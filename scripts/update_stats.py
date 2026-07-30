@@ -21,6 +21,11 @@ import urllib.request
 from pathlib import Path
 from datetime import date
 
+try:
+    from curl_cffi import requests as curl_requests  # TLS-fingerprint impersonation
+except ImportError:
+    curl_requests = None
+
 STATS_PATH = Path(__file__).resolve().parent.parent / "stats.json"
 
 HEADERS = {
@@ -37,12 +42,12 @@ def fetch(url):
         return resp.read().decode("utf-8", errors="replace")
 
 
-def find_number_near(html, label, window=250):
-    """Find the first integer that appears within `window` chars after the
-    first occurrence of `label` in the raw HTML. Proximity-based rather than
-    tag-based, so it's a bit more resistant to markup changes than a strict
-    CSS-path/regex would be."""
-    idx = html.find(label)
+def find_number_near(html, marker, window=250):
+    """Find the first integer that appears within `window` chars *after*
+    the first occurrence of `marker` (usually a distinctive href fragment
+    that sits right next to the number in the real markup — verified by
+    hand against each site's actual HTML rather than guessed)."""
+    idx = html.find(marker)
     if idx == -1:
         return None
     segment = html[idx : idx + window]
@@ -54,10 +59,9 @@ def find_number_near(html, label, window=250):
 
 def get_letterboxd(url):
     html = fetch(url)
-    # Letterboxd profile stats bar includes a "Films" stat with the count
-    # rendered right next to it.
-    count = find_number_near(html, "Films")
-    return count
+    # Profile stat block: <a href="/trashd/films/">136<...>Films</...></a>
+    # the number sits inside the same link as the /films/ href.
+    return find_number_near(html, '/trashd/films/"', window=150)
 
 
 def get_goodreads(url):
@@ -75,22 +79,42 @@ def get_goodreads(url):
 
 def get_backloggd(url):
     html = fetch(url)
-    count = find_number_near(html, "Played")
-    return count
+    # Main "Games Played" stat links to this exact path, with the number
+    # (rendered as a zero-padded odometer, e.g. "008") right inside it.
+    return find_number_near(html, "/u/Trashd/played/added/categories:games/", window=150)
 
 
 def get_aoty(url):
     html = fetch(url)
-    count = find_number_near(html, "Ratings")
-    return count
+    # Top stat row: <a href="/user/trashkan/ratings/">23 Ratings</a>
+    return find_number_near(html, "/user/trashkan/ratings/", window=100)
 
 
 def get_mal(url):
     html = fetch(url)
-    # Anime Stats section lists "Completed" before the Manga Stats section
-    # does, so the first match corresponds to anime, not manga.
-    count = find_number_near(html, "Completed", window=120)
-    return count
+    # Anime Stats "Completed" row: <a href="...animelist/TrashKan_?status=2">
+    # Completed</a>25 — anchoring on the animelist-specific href avoids
+    # accidentally matching the Manga Stats "Completed" row further down.
+    return find_number_near(html, "animelist/TrashKan_?status=2", window=80)
+
+
+def get_rym(url):
+    # RateYourMusic sits behind Cloudflare bot-detection that blocks plain
+    # requests (including urllib, requests, etc.) with a 403. curl_cffi
+    # impersonates a real browser's TLS/HTTP fingerprint, which is enough to
+    # get through in most cases — but Cloudflare's rules change over time,
+    # so this one is more likely than the others to eventually need a fix.
+    if curl_requests is None:
+        raise RuntimeError("curl_cffi is not installed (pip install curl_cffi)")
+
+    resp = curl_requests.get(url, headers=HEADERS, impersonate="chrome120", timeout=20)
+    if resp.status_code != 200:
+        raise RuntimeError(f"got HTTP {resp.status_code}")
+
+    m = re.search(r"([\d,]+)\s+ratings", resp.text, re.IGNORECASE)
+    if not m:
+        return None
+    return int(m.group(1).replace(",", ""))
 
 
 SITES = {
@@ -118,6 +142,11 @@ SITES = {
         "url": "https://myanimelist.net/profile/TrashKan_",
         "label": "Anime Completed",
         "fetcher": get_mal,
+    },
+    "rym": {
+        "url": "https://rateyourmusic.com/~RymKan",
+        "label": "Ratings",
+        "fetcher": get_rym,
     },
 }
 

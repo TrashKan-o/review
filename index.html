@@ -528,7 +528,7 @@
       <a class="card" href="https://letterboxd.com/Trashd/" target="_blank" rel="noopener noreferrer">
         <div class="card-inner">
           <p class="platform-name">Letterboxd</p>
-          <p class="stat" data-stat="letterboxd">136 Films Logged</p>
+          <p class="stat" data-stat="letterboxd">138 Films Logged</p>
         </div>
       </a>
 
@@ -556,7 +556,7 @@
       <a class="card" href="https://rateyourmusic.com/~RymKan" target="_blank" rel="noopener noreferrer">
         <div class="card-inner">
           <p class="platform-name">RateYourMusic</p>
-          <p class="stat" data-stat="rym">181 albums listened</p>
+          <p class="stat unlisted" data-stat="rym">count pending — RYM blocks most lookups</p>
         </div>
       </a>
 
@@ -571,7 +571,7 @@
 
     <footer>
       <p class="colophon">A collection of my faultless and impeccable reviews for the following media. Mainly catalogued for personal reason.</p>
-      <p class="credo">The bird is gone, and in what meadow does it now sing?</p>
+      <p class="credo">All for one, and one for all!</p>
       <p class="dedication">—Flow My Tears, the Policeman Said</p>
     </footer>
   </div>
@@ -590,6 +590,7 @@
             var entry = data[el.getAttribute('data-stat')];
             if (entry && typeof entry.count === 'number' && entry.label) {
               el.textContent = entry.count.toLocaleString() + ' ' + entry.label;
+              el.classList.remove('unlisted');
             }
           });
         })

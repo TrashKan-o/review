@@ -1,8 +1,8 @@
 {
   "letterboxd": {
-    "count": 193,
+    "count": 194,
     "label": "Films Logged",
-    "updated": "2026-09-04"
+    "updated": "2026-09-05"
   },
   "goodreads": {
     "count": 65,
@@ -12,7 +12,7 @@
   "backloggd": {
     "count": 1,
     "label": "Games Played",
-    "updated": "2026-09-04"
+    "updated": "2026-09-05"
   },
   "aoty": {
     "count": 26,
@@ -22,6 +22,6 @@
   "mal": {
     "count": 2,
     "label": "Anime Completed",
-    "updated": "2026-09-04"
+    "updated": "2026-09-05"
   }
 }
